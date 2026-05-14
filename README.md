@@ -129,6 +129,22 @@ atau localhost saat testing. Jika masih HTTP biasa, beberapa browser HP dapat me
 http://localhost/warehouse-hosting-app/login.php
 ```
 
+## Deploy ke Vercel
+
+Project ini sudah memiliki `vercel.json` dan adapter `api/index.php` untuk menjalankan PHP di Vercel memakai community runtime `vercel-php`.
+
+Tambahkan Environment Variables berikut di Vercel sebelum login dipakai:
+
+```text
+DB_HOST=host_mysql_anda
+DB_NAME=nama_database
+DB_USER=user_database
+DB_PASS=password_database
+DB_CHARSET=utf8mb4
+```
+
+Import `database/schema.sql` ke database MySQL eksternal lebih dulu. Vercel tidak menyediakan MySQL lokal di runtime serverless, jadi gunakan database hosting/cPanel, PlanetScale, Aiven, Railway, atau layanan MySQL lain yang menerima koneksi dari Vercel.
+
 ## Struktur Folder
 
 ```text
