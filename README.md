@@ -137,13 +137,21 @@ Tambahkan Environment Variables berikut di Vercel sebelum login dipakai:
 
 ```text
 DB_HOST=host_mysql_anda
+DB_PORT=3306
 DB_NAME=nama_database
 DB_USER=user_database
 DB_PASS=password_database
 DB_CHARSET=utf8mb4
 ```
 
-Import `database/schema.sql` ke database MySQL eksternal lebih dulu. Vercel tidak menyediakan MySQL lokal di runtime serverless, jadi gunakan database hosting/cPanel, PlanetScale, Aiven, Railway, atau layanan MySQL lain yang menerima koneksi dari Vercel.
+Import `database/schema.sql` ke database MySQL eksternal lebih dulu. Vercel tidak menyediakan MySQL lokal di runtime serverless, jadi gunakan database hosting/cPanel, PlanetScale, TiDB Cloud, Aiven, Railway, atau layanan MySQL lain yang menerima koneksi dari Vercel.
+
+Jika memakai Vercel Marketplace dengan TiDB Cloud atau PlanetScale, aplikasi juga membaca env bawaan provider:
+
+```text
+TIDB_HOST, TIDB_PORT, TIDB_USER, TIDB_PASSWORD, TIDB_DATABASE
+PLANETSCALE_DB_HOST, PLANETSCALE_DB_USERNAME, PLANETSCALE_DB_PASSWORD, PLANETSCALE_DB
+```
 
 ## Struktur Folder
 

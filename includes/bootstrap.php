@@ -4,14 +4,19 @@ require_once __DIR__ . '/../config/database.php';
 
 function db(): PDO {
     static $pdo = null;
-    global $db_host, $db_name, $db_user, $db_pass, $db_charset;
+    global $db_host, $db_port, $db_name, $db_user, $db_pass, $db_charset, $db_ssl_ca;
     if ($pdo === null) {
-        $dsn = "mysql:host={$db_host};dbname={$db_name};charset={$db_charset}";
-        $pdo = new PDO($dsn, $db_user, $db_pass, [
+        $port = $db_port ? ';port=' . $db_port : '';
+        $dsn = "mysql:host={$db_host}{$port};dbname={$db_name};charset={$db_charset}";
+        $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
-        ]);
+        ];
+        if ($db_ssl_ca && defined('PDO::MYSQL_ATTR_SSL_CA')) {
+            $options[PDO::MYSQL_ATTR_SSL_CA] = $db_ssl_ca;
+        }
+        $pdo = new PDO($dsn, $db_user, $db_pass, $options);
     }
     return $pdo;
 }
