@@ -1,0 +1,8 @@
+Options -Indexes
+DirectoryIndex login.php index.php
+
+<FilesMatch "^(database|README).*">
+  Require all denied
+</FilesMatch>
+
+# Jika server memakai Apache lama dan aturan di atas error, hapus blok FilesMatch.
