@@ -2,7 +2,7 @@
 // Koneksi database bisa memakai env terpisah (DB_HOST, DB_USER, dst.)
 // atau satu connection URL dari provider database cloud di Vercel.
 if (!function_exists('env_first')) {
-    function env_normalize_value(string $value, array $keys = []): string {
+    function env_trim_quotes(string $value): string {
         $value = trim($value);
         if ($value === '') return '';
 
@@ -12,26 +12,53 @@ if (!function_exists('env_first')) {
             $value = trim(substr($value, 1, -1));
         }
 
-        if (strpos($value, "\n") !== false || strpos($value, "\r") !== false) {
-            foreach (preg_split('/\R/', $value) as $line) {
-                $line = trim((string)$line);
-                if ($line === '' || substr($line, 0, 1) === '#') continue;
+        return $value;
+    }
 
-                foreach ($keys as $key) {
-                    if (preg_match('/^(?:export\s+)?' . preg_quote($key, '/') . '\s*=\s*(.*)$/', $line, $match)) {
-                        return env_normalize_value($match[1], []);
-                    }
+    function env_extract_assignment(string $value, array $keys): ?string {
+        $value = env_trim_quotes($value);
+        foreach (preg_split('/\R/', $value) as $line) {
+            $line = trim((string)$line);
+            if ($line === '' || substr($line, 0, 1) === '#') continue;
+
+            foreach ($keys as $key) {
+                if (preg_match('/^(?:export\s+)?' . preg_quote($key, '/') . '\s*=\s*(.*)$/', $line, $match)) {
+                    return env_trim_quotes($match[1]);
                 }
             }
         }
 
-        foreach ($keys as $key) {
-            if (preg_match('/^(?:export\s+)?' . preg_quote($key, '/') . '\s*=\s*(.*)$/', $value, $match)) {
-                return env_normalize_value($match[1], []);
-            }
+        return null;
+    }
+
+    function env_normalize_value(string $value, array $keys = []): string {
+        $value = env_trim_quotes($value);
+        if ($value === '') return '';
+
+        $assignedValue = $keys ? env_extract_assignment($value, $keys) : null;
+        if ($assignedValue !== null) return env_normalize_value($assignedValue, []);
+
+        if (strpos($value, "\n") !== false || strpos($value, "\r") !== false) {
+            return preg_match('/^\s*(?:export\s+)?[A-Z0-9_]+\s*=/m', $value) ? '' : $value;
         }
 
         return $value;
+    }
+
+    function env_embedded_first(array $keys): ?string {
+        $env = getenv();
+        if (!is_array($env)) return null;
+
+        foreach ($env as $value) {
+            if (!is_string($value) || strpos($value, '=') === false) continue;
+
+            $assignedValue = env_extract_assignment($value, $keys);
+            if ($assignedValue !== null && trim($assignedValue) !== '') {
+                return env_normalize_value($assignedValue, []);
+            }
+        }
+
+        return null;
     }
 
     function env_first(array $keys, ?string $default = null): ?string {
@@ -39,7 +66,9 @@ if (!function_exists('env_first')) {
             $value = getenv($key);
             if ($value !== false && trim((string)$value) !== '') return env_normalize_value((string)$value, $keys);
         }
-        return $default;
+
+        $embeddedValue = env_embedded_first($keys);
+        return $embeddedValue !== null ? $embeddedValue : $default;
     }
 }
 
