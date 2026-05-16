@@ -1,6 +1,6 @@
 # Warehouse Inventory QR System - PHP + MySQL
 
-Aplikasi web inventory gudang berbasis **PHP + MySQL** yang siap di-upload ke shared hosting/cPanel.
+Aplikasi web inventory gudang berbasis **PHP + MySQL** yang siap di-upload ke shared hosting/cPanel atau Vercel dengan database MySQL eksternal.
 
 ## Fitur Utama
 
@@ -84,13 +84,13 @@ Buka file:
 config/database.php
 ```
 
-Ubah sesuai database hosting:
+Jika hosting mendukung Environment Variables, isi nilai berikut. Jika harus edit langsung di file, ganti nilai default pada baris `$db_host`, `$db_name`, `$db_user`, dan `$db_pass`.
 
-```php
-$db_host = 'localhost';
-$db_name = 'cpaneluser_warehouse';
-$db_user = 'cpaneluser_whuser';
-$db_pass = 'PASSWORD_DATABASE_ANDA';
+```text
+DB_HOST=localhost
+DB_NAME=cpaneluser_warehouse
+DB_USER=cpaneluser_whuser
+DB_PASS=PASSWORD_DATABASE_ANDA
 ```
 
 ### 5. Login Awal
@@ -133,7 +133,27 @@ http://localhost/warehouse-hosting-app/login.php
 
 Project ini sudah memiliki `vercel.json` dan adapter `api/index.php` untuk menjalankan PHP di Vercel memakai community runtime `vercel-php`.
 
-Tambahkan Environment Variables berikut di Vercel sebelum login dipakai:
+### 1. Siapkan Database Cloud
+
+Buat database MySQL eksternal terlebih dulu, lalu import:
+
+```text
+database/schema.sql
+```
+
+File schema sudah berisi tabel inti dan tabel enterprise, jadi tidak perlu menunggu aplikasi membuat tabel saat runtime serverless.
+
+### 2. Tambahkan Environment Variables
+
+Gunakan salah satu format berikut di **Vercel Project Settings > Environment Variables**.
+
+Format connection string:
+
+```text
+DATABASE_URL=mysql://user:password@host:3306/nama_database?ssl-mode=REQUIRED
+```
+
+Atau format terpisah:
 
 ```text
 DB_HOST=host_mysql_anda
@@ -142,9 +162,18 @@ DB_NAME=nama_database
 DB_USER=user_database
 DB_PASS=password_database
 DB_CHARSET=utf8mb4
+DB_SSL_MODE=REQUIRED
 ```
 
-Import `database/schema.sql` ke database MySQL eksternal lebih dulu. Vercel tidak menyediakan MySQL lokal di runtime serverless, jadi gunakan database hosting/cPanel, PlanetScale, TiDB Cloud, Aiven, Railway, atau layanan MySQL lain yang menerima koneksi dari Vercel.
+`DB_SSL_MODE` bisa dikosongkan jika database tidak mewajibkan SSL. Jika provider memberi CA khusus, tambahkan:
+
+```text
+DB_SSL_CA=/path/to/ca.pem
+```
+
+Contoh env juga tersedia di `.env.example`.
+
+Vercel tidak memakai MySQL lokal di runtime serverless, jadi gunakan database hosting/cPanel, PlanetScale, TiDB Cloud, Aiven, Railway, atau layanan MySQL lain yang menerima koneksi dari Vercel.
 
 Jika memakai Vercel Marketplace dengan TiDB Cloud atau PlanetScale, aplikasi juga membaca env bawaan provider:
 
@@ -152,6 +181,8 @@ Jika memakai Vercel Marketplace dengan TiDB Cloud atau PlanetScale, aplikasi jug
 TIDB_HOST, TIDB_PORT, TIDB_USER, TIDB_PASSWORD, TIDB_DATABASE
 PLANETSCALE_DB_HOST, PLANETSCALE_DB_USERNAME, PLANETSCALE_DB_PASSWORD, PLANETSCALE_DB
 ```
+
+Aplikasi juga membaca URL umum seperti `DATABASE_URL`, `MYSQL_URL`, `MYSQL_DATABASE_URL`, `MYSQL_PUBLIC_URL`, `TIDB_DATABASE_URL`, `PLANETSCALE_DATABASE_URL`, `JAWSDB_URL`, dan `CLEARDB_DATABASE_URL`.
 
 ## Struktur Folder
 

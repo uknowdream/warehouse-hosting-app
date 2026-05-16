@@ -5,13 +5,27 @@ function render_header(string $page): void {
         'dashboard'=>'Dashboard','master'=>'Master Barang','stock'=>'Data Stock','qr'=>'Generate QR','movement'=>'Stock Masuk/Keluar','opname'=>'Stock Opname QR','transfer'=>'Transfer Gudang','quality'=>'Retur & Karantina','purchase'=>'Purchase Request','approval'=>'Approval','supplier'=>'Supplier','reports'=>'Laporan','audit'=>'Audit Trail','roles'=>'Role Management','settings'=>'Setting Data'
     ];
     if (function_exists('enterprise_titles')) $titles = array_merge($titles, enterprise_titles());
+    $pageTitle = $titles[$page] ?? 'Warehouse';
+    $pageGroup = 'Workspace';
+    foreach (menu_items() as $item) {
+        if ($item[0] === $page) {
+            $pageGroup = $item[4] ?? 'Workspace';
+            break;
+        }
+    }
+    $quickLinks = [
+        ['dashboard', 'Dashboard', 'DB'],
+        ['stock', 'Stock', 'SK'],
+        ['qr', 'QR', 'QR'],
+        ['reports', 'Laporan', 'RP'],
+    ];
     ?>
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><?= h($titles[$page] ?? 'Warehouse') ?> - Warehouse Inventory</title>
+  <title><?= h($pageTitle) ?> - Warehouse Inventory</title>
   <script>
     (function () {
       try {
@@ -21,17 +35,21 @@ function render_header(string $page): void {
       } catch (error) {}
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/style.css?v=1.4">
+  <link rel="stylesheet" href="assets/css/style.css?v=1.5">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
-<button class="mobile-menu-btn" type="button" onclick="toggleSidebar()" aria-label="Buka menu">Menu</button>
+<a class="skip-link" href="#mainContent">Lewati ke konten</a>
+<button class="mobile-menu-btn" type="button" onclick="toggleSidebar()" aria-label="Buka menu"><span class="mobile-menu-icon" aria-hidden="true"></span></button>
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-logo">WG</div>
       <div class="brand-copy"><h1>Warehouse Pro</h1><small><?= h($user['role_name'] ?? '') ?></small></div>
+    </div>
+    <div class="sidebar-search">
+      <input class="nav-search" type="search" placeholder="Cari menu..." aria-label="Cari menu" data-nav-search>
     </div>
     <nav class="nav">
       <?php
@@ -57,6 +75,7 @@ function render_header(string $page): void {
           </div>
         </div>
       <?php endforeach; ?>
+      <div class="nav-empty" data-nav-empty hidden>Menu tidak ditemukan.</div>
     </nav>
   </aside>
   <main class="main">
@@ -65,14 +84,22 @@ function render_header(string $page): void {
         <button class="sidebar-toggle-btn" type="button" data-sidebar-toggle data-hide-label="Sembunyikan menu" data-show-label="Tampilkan menu" aria-label="Sembunyikan menu" title="Sembunyikan menu">
           <span class="sidebar-toggle-icon" aria-hidden="true"></span>
         </button>
-        <div><h2><?= h($titles[$page] ?? 'Warehouse') ?></h2><p>Inventory, QR, stock opname, approval, dan laporan</p></div>
+        <div>
+          <div class="page-kicker"><?= h($pageGroup) ?></div>
+          <h2><?= h($pageTitle) ?></h2>
+        </div>
       </div>
       <div class="top-actions">
+        <div class="quick-actions" aria-label="Akses cepat">
+          <?php foreach ($quickLinks as $link): if (!page_allowed($link[0])) continue; ?>
+            <a class="quick-action <?= $page === $link[0] ? 'active' : '' ?>" href="<?= h(url($link[0])) ?>" aria-label="<?= h($link[1]) ?>" title="<?= h($link[1]) ?>"><?= h($link[2]) ?></a>
+          <?php endforeach; ?>
+        </div>
         <span class="user-pill"><?= h($user['name'] ?? '') ?> &middot; <?= h($user['role_name'] ?? '') ?></span>
         <a class="btn btn-outline" href="logout.php">Logout</a>
       </div>
     </header>
-    <section class="content">
+    <section class="content" id="mainContent">
       <?php foreach (get_flash() as $f): ?>
         <div class="alert alert-<?= h($f['type']) ?>"><?= h($f['message']) ?></div>
       <?php endforeach; ?>
@@ -82,6 +109,7 @@ function render_footer(): void { ?>
     </section>
   </main>
 </div>
+<div class="sidebar-backdrop" data-sidebar-backdrop></div>
 <div class="confirm-modal" id="confirmModal" aria-hidden="true">
   <div class="confirm-backdrop" data-confirm-cancel></div>
   <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
@@ -96,7 +124,7 @@ function render_footer(): void { ?>
     </div>
   </div>
 </div>
-<script src="assets/js/app.js?v=1.4"></script>
+<script src="assets/js/app.js?v=1.5"></script>
 </body>
 </html>
 <?php }

@@ -1,5 +1,7 @@
 function toggleSidebar() {
-  document.getElementById('sidebar')?.classList.toggle('open');
+  const sidebar = document.getElementById('sidebar');
+  sidebar?.classList.toggle('open');
+  document.body.classList.toggle('sidebar-open', !!sidebar?.classList.contains('open'));
 }
 
 function bindSidebarVisibility() {
@@ -79,8 +81,66 @@ document.addEventListener('click', function (event) {
   if (!sidebar || !button) return;
   if (window.innerWidth <= 900 && !sidebar.contains(event.target) && !button.contains(event.target)) {
     sidebar.classList.remove('open');
+    document.body.classList.remove('sidebar-open');
   }
 });
+
+function bindMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.querySelector('[data-sidebar-backdrop]');
+  if (!sidebar) return;
+
+  const close = function () {
+    sidebar.classList.remove('open');
+    document.body.classList.remove('sidebar-open');
+  };
+
+  backdrop?.addEventListener('click', close);
+  sidebar.querySelectorAll('a.nav-btn').forEach(function (link) {
+    link.addEventListener('click', function () {
+      if (window.innerWidth <= 900) close();
+    });
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') close();
+  });
+}
+
+function bindNavSearch() {
+  const input = document.querySelector('[data-nav-search]');
+  const groups = Array.from(document.querySelectorAll('[data-nav-group]'));
+  const empty = document.querySelector('[data-nav-empty]');
+  if (!input || !groups.length) return;
+
+  const apply = function () {
+    const query = normalizeSearchText(input.value);
+    let totalVisible = 0;
+
+    groups.forEach(function (group) {
+      let groupVisible = 0;
+      group.querySelectorAll('.nav-btn').forEach(function (link) {
+        const visible = !query || normalizeSearchText(link.textContent).includes(query);
+        link.hidden = !visible;
+        if (visible) groupVisible += 1;
+      });
+
+      const showGroup = groupVisible > 0;
+      group.hidden = !showGroup;
+      if (showGroup) totalVisible += groupVisible;
+
+      if (query && showGroup) {
+        group.classList.remove('is-collapsed');
+        group.querySelector('.nav-group-toggle')?.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    if (empty) empty.hidden = totalVisible !== 0;
+  };
+
+  input.addEventListener('input', apply);
+  apply();
+}
 
 function normalizeSearchText(value) {
   return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
@@ -286,6 +346,8 @@ function bindQRSearch() {
 document.addEventListener('DOMContentLoaded', function () {
   bindSidebarVisibility();
   bindSidebarGroups();
+  bindMobileSidebar();
+  bindNavSearch();
   buildQRLabels();
   bindDashboardFilters();
   bindActionConfirm();

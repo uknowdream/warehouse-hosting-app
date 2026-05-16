@@ -19,25 +19,45 @@ if (is_post()) {
 <html lang="id">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Login Warehouse Inventory</title><link rel="stylesheet" href="assets/css/style.css?v=1.1">
+  <title>Login Warehouse Inventory</title><link rel="stylesheet" href="assets/css/style.css?v=1.5">
 </head>
 <body class="login-body">
-  <div class="login-card">
-    <div class="brand brand-login"><div class="brand-logo">WG</div><div><h1>Warehouse Pro</h1><small>Login Inventory System</small></div></div>
-    <?php foreach (get_flash() as $f): ?><div class="alert alert-<?= h($f['type']) ?>"><?= h($f['message']) ?></div><?php endforeach; ?>
-    <form method="post">
-      <?= csrf_field() ?>
-      <label>Email</label><input class="input" name="email" value="admin@warehouse.local" required>
-      <label>Password</label><input class="input" name="password" type="password" value="admin123" required>
-      <button class="btn btn-primary full">Masuk</button>
-    </form>
-    <div class="demo-box">
-      <strong>Akun Demo</strong><br>
-      Admin: admin@warehouse.local / admin123<br>
-      Manager: manager@warehouse.local / manager123<br>
-      Staff: staff@warehouse.local / staff123<br>
-      Viewer: viewer@warehouse.local / viewer123
-    </div>
-  </div>
+  <main class="login-shell">
+    <section class="login-card">
+      <div class="brand brand-login"><div class="brand-logo">WG</div><div><h1>Warehouse Pro</h1><small>Inventory System</small></div></div>
+      <div class="login-heading">
+        <p class="page-kicker">Masuk aplikasi</p>
+        <h2>Selamat datang kembali.</h2>
+      </div>
+      <?php foreach (get_flash() as $f): ?><div class="alert alert-<?= h($f['type']) ?>"><?= h($f['message']) ?></div><?php endforeach; ?>
+      <form method="post" class="login-form">
+        <?= csrf_field() ?>
+        <div class="field"><label>Email</label><input class="input" name="email" value="admin@warehouse.local" autocomplete="username" required></div>
+        <div class="field"><label>Password</label><input class="input" name="password" type="password" value="admin123" autocomplete="current-password" required></div>
+        <button class="btn btn-primary full">Masuk</button>
+      </form>
+      <div class="demo-box">
+        <strong>Akun Demo</strong>
+        <div class="demo-grid">
+          <span>Admin</span><code>admin@warehouse.local / admin123</code>
+          <span>Manager</span><code>manager@warehouse.local / manager123</code>
+          <span>Staff</span><code>staff@warehouse.local / staff123</code>
+          <span>Viewer</span><code>viewer@warehouse.local / viewer123</code>
+        </div>
+      </div>
+    </section>
+    <section class="login-aside" aria-label="Ringkasan sistem">
+      <div class="login-aside-card">
+        <div class="login-aside-logo">WG</div>
+        <h2>Warehouse Pro</h2>
+        <p>Ruang kerja tim gudang untuk aktivitas harian yang lebih tertata.</p>
+        <div class="login-metrics">
+          <div><strong>Rapi</strong><span>data</span></div>
+          <div><strong>Cepat</strong><span>akses</span></div>
+          <div><strong>Aman</strong><span>role</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
 </body>
 </html>
