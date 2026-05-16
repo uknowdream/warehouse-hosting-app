@@ -1,11 +1,17 @@
 <?php
+if (getenv('VERCEL')) {
+    ini_set('display_errors', '0');
+}
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../config/database.php';
 
 function db(): PDO {
     static $pdo = null;
-    global $db_host, $db_port, $db_name, $db_user, $db_pass, $db_charset, $db_ssl_ca, $db_ssl_mode, $db_ssl_verify;
+    global $db_host, $db_port, $db_name, $db_user, $db_pass, $db_charset, $db_ssl_ca, $db_ssl_mode, $db_ssl_verify, $db_config_missing;
     if ($pdo === null) {
+        if ($db_config_missing) {
+            throw new RuntimeException('Database Vercel belum dikonfigurasi.');
+        }
         $port = $db_port ? ';port=' . $db_port : '';
         $dsn = "mysql:host={$db_host}{$port};dbname={$db_name};charset={$db_charset}";
         $options = [
@@ -53,10 +59,75 @@ function verify_csrf(): void {
     if (!$ok) { http_response_code(419); exit('CSRF token tidak valid. Refresh halaman lalu coba lagi.'); }
 }
 
+function database_error_response(Throwable $e): never {
+    global $db_config_missing;
+    http_response_code(503);
+
+    $code = (string)$e->getCode();
+    $message = $e->getMessage();
+    $title = 'Database belum siap';
+    $detail = 'Aplikasi belum bisa terhubung ke database MySQL eksternal.';
+    $steps = [
+        'Buat database MySQL eksternal dan import file database/schema.sql.',
+        'Tambahkan Environment Variables di Vercel: DATABASE_URL atau DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS.',
+        'Redeploy project setelah Environment Variables tersimpan.',
+    ];
+
+    if ($db_config_missing) {
+        $title = 'Database Vercel belum dikonfigurasi';
+        $detail = 'Deployment ini belum memiliki environment variable database, jadi aplikasi tidak mencoba koneksi ke localhost.';
+    } elseif ($code === '42S02' || str_contains($message, 'Base table or view not found')) {
+        $title = 'Schema database belum di-import';
+        $detail = 'Koneksi database berhasil dijangkau, tetapi tabel aplikasi belum tersedia.';
+        $steps = [
+            'Import database/schema.sql ke database MySQL yang dipakai Vercel.',
+            'Pastikan DB_NAME mengarah ke database yang sama.',
+            'Refresh halaman setelah import selesai.',
+        ];
+    } elseif (str_contains($message, 'SQLSTATE[HY000] [2002]') || str_contains($message, 'Connection refused') || str_contains($message, 'No such file or directory')) {
+        $title = 'Koneksi database gagal';
+        $detail = 'Host database tidak bisa dijangkau dari Vercel. Pastikan host bukan localhost dan database menerima koneksi remote.';
+    } elseif ($code === '1045') {
+        $title = 'Login database ditolak';
+        $detail = 'User atau password database di Environment Variables belum cocok.';
+    } elseif ($code === '1049') {
+        $title = 'Database tidak ditemukan';
+        $detail = 'Nama database di DB_NAME atau DATABASE_URL belum sesuai.';
+    }
+
+    $requestPath = $_SERVER['REQUEST_URI'] ?? '';
+    $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+    if (str_contains($requestPath, '/api') || str_contains($accept, 'application/json')) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'error' => $title, 'detail' => $detail], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $safeTitle = h($title);
+    $safeDetail = h($detail);
+    $envExample = h("DATABASE_URL=mysql://user:password@host:3306/nama_database?ssl-mode=REQUIRED");
+    echo '<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' . $safeTitle . '</title><style>
+        body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;background:#111827;color:#111827;font-family:Inter,Segoe UI,Arial,sans-serif}
+        .panel{width:min(760px,100%);padding:26px;border-radius:10px;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.24)}
+        .kicker{margin:0 0 8px;color:#b42318;font-size:12px;font-weight:900;text-transform:uppercase}
+        h1{margin:0 0 10px;font-size:28px;line-height:1.15}p{margin:0 0 16px;color:#667085;line-height:1.55}
+        ol{margin:0 0 16px 20px;padding:0;color:#344054;line-height:1.65}code{display:block;overflow:auto;padding:12px;border-radius:8px;background:#f2f4f7;color:#344054}
+        .note{margin-top:16px;padding:12px;border:1px solid #fee4e2;border-radius:8px;background:#fff8f7;color:#7a271a}
+    </style></head><body><main class="panel"><p class="kicker">Warehouse Pro</p><h1>' . $safeTitle . '</h1><p>' . $safeDetail . '</p><ol>';
+    foreach ($steps as $step) echo '<li>' . h($step) . '</li>';
+    echo '</ol><code>' . $envExample . '</code><div class="note">Setelah env database di Vercel benar, halaman login akan aktif kembali.</div></main></body></html>';
+    exit;
+}
+
 function q(string $sql, array $params = []): PDOStatement {
-    $stmt = db()->prepare($sql);
-    $stmt->execute($params);
-    return $stmt;
+    try {
+        $stmt = db()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt;
+    } catch (Throwable $e) {
+        if (PHP_SAPI === 'cli') throw $e;
+        database_error_response($e);
+    }
 }
 function one(string $sql, array $params = []): ?array { $r = q($sql, $params)->fetch(); return $r ?: null; }
 function all_rows(string $sql, array $params = []): array { return q($sql, $params)->fetchAll(); }

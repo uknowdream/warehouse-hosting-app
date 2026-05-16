@@ -20,6 +20,7 @@ $db_charset = env_first(['DB_CHARSET', 'MYSQL_CHARSET'], 'utf8mb4');
 $db_ssl_ca = env_first(['DB_SSL_CA', 'MYSQL_ATTR_SSL_CA', 'MYSQL_SSL_CA', 'PLANETSCALE_SSL_CERT_PATH'], '');
 $db_ssl_mode = strtolower((string) env_first(['DB_SSL_MODE', 'MYSQL_SSL_MODE'], ''));
 $db_ssl_verify = env_first(['DB_SSL_VERIFY', 'MYSQL_SSL_VERIFY'], '');
+$db_running_on_vercel = env_first(['VERCEL', 'NOW_REGION'], '') !== '';
 
 $db_url = env_first([
     'DATABASE_URL',
@@ -36,6 +37,11 @@ $db_url = env_first([
     'JAWSDB_MARIA_URL',
     'CLEARDB_DATABASE_URL',
 ], '');
+
+$db_env_host = env_first(['DB_HOST', 'DATABASE_HOST', 'MYSQL_HOST', 'MYSQLHOST', 'TIDB_HOST', 'PLANETSCALE_DB_HOST'], '');
+$db_env_name = env_first(['DB_NAME', 'DATABASE_NAME', 'MYSQL_DATABASE', 'MYSQLDATABASE', 'TIDB_DATABASE', 'PLANETSCALE_DB', 'PLANETSCALE_DATABASE_NAME'], '');
+$db_env_user = env_first(['DB_USER', 'DATABASE_USER', 'MYSQL_USER', 'MYSQLUSER', 'TIDB_USER', 'PLANETSCALE_DB_USERNAME', 'PLANETSCALE_USERNAME'], '');
+$db_config_missing = $db_running_on_vercel && !$db_url && ($db_env_host === '' || $db_env_name === '' || $db_env_user === '');
 
 if ($db_url) {
     $parts = parse_url($db_url);
