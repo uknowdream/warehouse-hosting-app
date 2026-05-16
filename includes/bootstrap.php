@@ -72,7 +72,7 @@ function database_error_response(Throwable $e): never {
     $detail = 'Aplikasi belum bisa terhubung ke database MySQL eksternal.';
     $steps = [
         'Buat database MySQL eksternal dan import file database/schema.sql.',
-        'Tambahkan Environment Variables di Vercel: DATABASE_URL atau DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS.',
+        'Hapus DATABASE_URL lama jika masih ada dan pakai env terpisah: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS.',
         'Redeploy project setelah Environment Variables tersimpan. Aplikasi akan membuat tabel otomatis jika database masih kosong.',
     ];
 
@@ -81,7 +81,7 @@ function database_error_response(Throwable $e): never {
         $detail = 'Deployment ini belum memiliki environment variable database, jadi aplikasi tidak mencoba koneksi ke localhost.';
     } elseif ($db_placeholder_config) {
         $title = 'DATABASE_URL masih memakai contoh';
-        $detail = 'Environment Variable DATABASE_URL di Vercel masih berisi user/password/host/nama_database contoh. Ganti dengan credential MySQL asli dari provider database.';
+        $detail = 'Environment Variable database di Vercel masih berisi contoh seperti DB_HOST, DB_USER, atau nama_database. Ganti dengan credential MySQL asli dari provider database.';
     } elseif (!empty($db_url_parse_error)) {
         $title = 'DATABASE_URL tidak sesuai';
         $detail = $db_url_parse_error;
@@ -114,7 +114,7 @@ function database_error_response(Throwable $e): never {
 
     $safeTitle = h($title);
     $safeDetail = h($detail);
-    $envExample = h("DATABASE_URL=mysql://user:password@host:3306/nama_database?ssl-mode=REQUIRED");
+    $envExample = h("DB_HOST=host_mysql_asli\nDB_PORT=3306\nDB_NAME=nama_database_asli\nDB_USER=user_database_asli\nDB_PASS=password_database_asli\nDB_CHARSET=utf8mb4\nDB_SSL_MODE=REQUIRED\nDB_AUTO_INSTALL=true");
     $diagnostics = [
         'PDO code' => $code ?: '-',
         'DB host' => $db_host ?: '-',
@@ -128,7 +128,7 @@ function database_error_response(Throwable $e): never {
         .panel{width:min(760px,100%);padding:26px;border-radius:10px;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.24)}
         .kicker{margin:0 0 8px;color:#b42318;font-size:12px;font-weight:900;text-transform:uppercase}
         h1{margin:0 0 10px;font-size:28px;line-height:1.15}p{margin:0 0 16px;color:#667085;line-height:1.55}
-        ol{margin:0 0 16px 20px;padding:0;color:#344054;line-height:1.65}code{display:block;overflow:auto;padding:12px;border-radius:8px;background:#f2f4f7;color:#344054}
+        ol{margin:0 0 16px 20px;padding:0;color:#344054;line-height:1.65}code{display:block;white-space:pre;overflow:auto;padding:12px;border-radius:8px;background:#f2f4f7;color:#344054}
         dl{display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px 12px;margin:16px 0;padding:12px;border-radius:8px;background:#f8fafc}dt{color:#667085;font-weight:800}dd{margin:0;overflow-wrap:anywhere}
         .note{margin-top:16px;padding:12px;border:1px solid #fee4e2;border-radius:8px;background:#fff8f7;color:#7a271a}
     </style></head><body><main class="panel"><p class="kicker">Warehouse Pro</p><h1>' . $safeTitle . '</h1><p>' . $safeDetail . '</p><dl>';

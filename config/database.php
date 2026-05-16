@@ -2,10 +2,42 @@
 // Koneksi database bisa memakai env terpisah (DB_HOST, DB_USER, dst.)
 // atau satu connection URL dari provider database cloud di Vercel.
 if (!function_exists('env_first')) {
+    function env_normalize_value(string $value, array $keys = []): string {
+        $value = trim($value);
+        if ($value === '') return '';
+
+        $firstChar = substr($value, 0, 1);
+        $lastChar = substr($value, -1);
+        if (($firstChar === '"' && $lastChar === '"') || ($firstChar === "'" && $lastChar === "'")) {
+            $value = trim(substr($value, 1, -1));
+        }
+
+        if (strpos($value, "\n") !== false || strpos($value, "\r") !== false) {
+            foreach (preg_split('/\R/', $value) as $line) {
+                $line = trim((string)$line);
+                if ($line === '' || substr($line, 0, 1) === '#') continue;
+
+                foreach ($keys as $key) {
+                    if (preg_match('/^(?:export\s+)?' . preg_quote($key, '/') . '\s*=\s*(.*)$/', $line, $match)) {
+                        return env_normalize_value($match[1], []);
+                    }
+                }
+            }
+        }
+
+        foreach ($keys as $key) {
+            if (preg_match('/^(?:export\s+)?' . preg_quote($key, '/') . '\s*=\s*(.*)$/', $value, $match)) {
+                return env_normalize_value($match[1], []);
+            }
+        }
+
+        return $value;
+    }
+
     function env_first(array $keys, ?string $default = null): ?string {
         foreach ($keys as $key) {
             $value = getenv($key);
-            if ($value !== false && $value !== '') return $value;
+            if ($value !== false && trim((string)$value) !== '') return env_normalize_value((string)$value, $keys);
         }
         return $default;
     }
@@ -80,6 +112,6 @@ if ($db_url) {
     }
 }
 
-$db_placeholder_config = in_array($db_host, ['host', 'host_mysql_anda'], true)
-    || ($db_running_on_vercel && $db_url && $db_name === 'nama_database')
-    || in_array($db_user, ['user', 'user_database'], true);
+$db_placeholder_config = in_array(strtolower($db_host), ['host', 'db_host', 'host_mysql_anda', 'isi_host_mysql_asli'], true)
+    || in_array(strtolower($db_name), ['db_name', 'nama_database', 'isi_nama_database_asli'], true)
+    || in_array(strtolower($db_user), ['user', 'db_user', 'user_database', 'isi_user_database_asli'], true);
