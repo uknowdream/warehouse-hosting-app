@@ -70,6 +70,41 @@ if (!function_exists('env_first')) {
         $embeddedValue = env_embedded_first($keys);
         return $embeddedValue !== null ? $embeddedValue : $default;
     }
+
+    function env_is_placeholder(?string $value): bool {
+        $value = strtolower(trim((string)$value));
+        if ($value === '') return false;
+
+        $normalized = preg_replace('/[^a-z0-9]+/', '_', $value);
+        $placeholders = [
+            'host',
+            'db_host',
+            'host_mysql_anda',
+            'host_mysql_asli',
+            'host_mysql_asli_dari_hosting',
+            'isi_host_mysql_asli',
+            'mysql_example_com',
+            'db_name',
+            'nama_database',
+            'nama_database_asli',
+            'isi_nama_database_asli',
+            'user',
+            'db_user',
+            'user_database',
+            'user_database_asli',
+            'isi_user_database_asli',
+            'password',
+            'db_pass',
+            'password_database',
+            'password_database_asli',
+            'isi_password_database_asli',
+        ];
+
+        if (in_array($normalized, $placeholders, true)) return true;
+
+        return preg_match('/^(isi|ganti|masukkan|your|example|contoh)_/', $normalized) === 1
+            || preg_match('/_(asli|anda|hosting)$/', $normalized) === 1;
+    }
 }
 
 $db_host = env_first(['DB_HOST', 'DATABASE_HOST', 'MYSQL_HOST', 'MYSQLHOST', 'TIDB_HOST', 'PLANETSCALE_DB_HOST'], 'localhost');
@@ -141,6 +176,7 @@ if ($db_url) {
     }
 }
 
-$db_placeholder_config = in_array(strtolower($db_host), ['host', 'db_host', 'host_mysql_anda', 'isi_host_mysql_asli'], true)
-    || in_array(strtolower($db_name), ['db_name', 'nama_database', 'isi_nama_database_asli'], true)
-    || in_array(strtolower($db_user), ['user', 'db_user', 'user_database', 'isi_user_database_asli'], true);
+$db_placeholder_config = env_is_placeholder($db_host)
+    || env_is_placeholder($db_name)
+    || env_is_placeholder($db_user)
+    || env_is_placeholder($db_pass);

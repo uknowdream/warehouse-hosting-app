@@ -80,8 +80,8 @@ function database_error_response(Throwable $e): never {
         $title = 'Database Vercel belum dikonfigurasi';
         $detail = 'Deployment ini belum memiliki environment variable database, jadi aplikasi tidak mencoba koneksi ke localhost.';
     } elseif ($db_placeholder_config) {
-        $title = 'DATABASE_URL masih memakai contoh';
-        $detail = 'Environment Variable database di Vercel masih berisi contoh seperti DB_HOST, DB_USER, atau nama_database. Ganti dengan credential MySQL asli dari provider database.';
+        $title = 'ENV database masih memakai contoh';
+        $detail = 'Environment Variable database di Vercel masih berisi placeholder seperti HOST_MYSQL_ASLI_DARI_HOSTING, NAMA_DATABASE_ASLI, USER_DATABASE_ASLI, atau PASSWORD_DATABASE_ASLI. Ganti semua placeholder dengan credential MySQL asli.';
     } elseif (!empty($db_url_parse_error)) {
         $title = 'DATABASE_URL tidak sesuai';
         $detail = $db_url_parse_error;
