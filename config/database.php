@@ -22,6 +22,7 @@ $db_ssl_mode = strtolower((string) env_first(['DB_SSL_MODE', 'MYSQL_SSL_MODE'], 
 $db_ssl_verify = env_first(['DB_SSL_VERIFY', 'MYSQL_SSL_VERIFY'], '');
 $db_running_on_vercel = env_first(['VERCEL', 'NOW_REGION'], '') !== '';
 $db_url_parse_error = '';
+$db_placeholder_config = false;
 
 $db_url = env_first([
     'DATABASE_URL',
@@ -78,3 +79,7 @@ if ($db_url) {
         $db_url_parse_error = 'DATABASE_URL tidak bisa dibaca. Pastikan formatnya mysql://user:password@host:3306/nama_database';
     }
 }
+
+$db_placeholder_config = in_array($db_host, ['host', 'host_mysql_anda'], true)
+    || ($db_running_on_vercel && $db_url && $db_name === 'nama_database')
+    || in_array($db_user, ['user', 'user_database'], true);

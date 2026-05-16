@@ -7,10 +7,13 @@ require_once __DIR__ . '/../config/database.php';
 
 function db(): PDO {
     static $pdo = null;
-    global $db_host, $db_port, $db_name, $db_user, $db_pass, $db_charset, $db_ssl_ca, $db_ssl_mode, $db_ssl_verify, $db_config_missing;
+    global $db_host, $db_port, $db_name, $db_user, $db_pass, $db_charset, $db_ssl_ca, $db_ssl_mode, $db_ssl_verify, $db_config_missing, $db_placeholder_config;
     if ($pdo === null) {
         if ($db_config_missing) {
             throw new RuntimeException('Database Vercel belum dikonfigurasi.');
+        }
+        if ($db_placeholder_config) {
+            throw new RuntimeException('DATABASE_URL masih memakai nilai contoh.');
         }
         $port = $db_port ? ';port=' . $db_port : '';
         $dsn = "mysql:host={$db_host}{$port};dbname={$db_name};charset={$db_charset}";
@@ -60,7 +63,7 @@ function verify_csrf(): void {
 }
 
 function database_error_response(Throwable $e): never {
-    global $db_config_missing, $db_host, $db_port, $db_name, $db_user, $db_ssl_mode, $db_url_parse_error;
+    global $db_config_missing, $db_placeholder_config, $db_host, $db_port, $db_name, $db_user, $db_ssl_mode, $db_url_parse_error;
     http_response_code(503);
 
     $code = (string)$e->getCode();
@@ -76,6 +79,9 @@ function database_error_response(Throwable $e): never {
     if ($db_config_missing) {
         $title = 'Database Vercel belum dikonfigurasi';
         $detail = 'Deployment ini belum memiliki environment variable database, jadi aplikasi tidak mencoba koneksi ke localhost.';
+    } elseif ($db_placeholder_config) {
+        $title = 'DATABASE_URL masih memakai contoh';
+        $detail = 'Environment Variable DATABASE_URL di Vercel masih berisi user/password/host/nama_database contoh. Ganti dengan credential MySQL asli dari provider database.';
     } elseif (!empty($db_url_parse_error)) {
         $title = 'DATABASE_URL tidak sesuai';
         $detail = $db_url_parse_error;
