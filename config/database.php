@@ -64,11 +64,16 @@ if (!function_exists('env_first')) {
     function env_first(array $keys, ?string $default = null): ?string {
         foreach ($keys as $key) {
             $value = getenv($key);
-            if ($value !== false && trim((string)$value) !== '') return env_normalize_value((string)$value, $keys);
+            if ($value !== false && trim((string)$value) !== '') {
+                $normalizedValue = env_normalize_value((string)$value, $keys);
+                if ($normalizedValue !== '' && !env_is_placeholder($normalizedValue)) return $normalizedValue;
+            }
         }
 
         $embeddedValue = env_embedded_first($keys);
-        return $embeddedValue !== null ? $embeddedValue : $default;
+        if ($embeddedValue !== null && !env_is_placeholder($embeddedValue)) return $embeddedValue;
+
+        return $default;
     }
 
     function env_is_placeholder(?string $value): bool {

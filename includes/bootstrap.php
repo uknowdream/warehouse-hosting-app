@@ -71,8 +71,8 @@ function database_error_response(Throwable $e): never {
     $title = 'Database belum siap';
     $detail = 'Aplikasi belum bisa terhubung ke database MySQL eksternal.';
     $steps = [
-        'Buat database MySQL eksternal dan import file database/schema.sql.',
-        'Hapus DATABASE_URL lama jika masih ada dan pakai env terpisah: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS.',
+        'Jika tidak punya hosting database, install TiDB Cloud dari Vercel Marketplace untuk membuat database MySQL-compatible.',
+        'Hapus DATABASE_URL/DB_HOST/DB_NAME/DB_USER/DB_PASS lama yang masih berisi placeholder.',
         'Redeploy project setelah Environment Variables tersimpan. Aplikasi akan membuat tabel otomatis jika database masih kosong.',
     ];
 
