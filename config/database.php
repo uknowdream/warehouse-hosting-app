@@ -181,6 +181,17 @@ if ($db_url) {
     }
 }
 
+$tidb_host = env_first(['TIDB_HOST'], '');
+if ($tidb_host !== '') {
+    $db_host = $tidb_host;
+    $db_port = env_first(['TIDB_PORT'], $db_port);
+    $db_name = env_first(['TIDB_DATABASE'], $db_name);
+    $db_user = env_first(['TIDB_USER'], $db_user);
+    $db_pass = env_first(['TIDB_PASSWORD'], $db_pass);
+    if ($db_ssl_mode === '') $db_ssl_mode = 'required';
+    $db_url_parse_error = '';
+}
+
 $db_placeholder_config = env_is_placeholder($db_host)
     || env_is_placeholder($db_name)
     || env_is_placeholder($db_user)
