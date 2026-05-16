@@ -163,6 +163,7 @@ DB_USER=user_database
 DB_PASS=password_database
 DB_CHARSET=utf8mb4
 DB_SSL_MODE=REQUIRED
+DB_AUTO_INSTALL=true
 ```
 
 `DB_SSL_MODE` bisa dikosongkan jika database tidak mewajibkan SSL. Jika provider memberi CA khusus, tambahkan:
@@ -174,6 +175,8 @@ DB_SSL_CA=/path/to/ca.pem
 Contoh env juga tersedia di `.env.example`.
 
 Vercel tidak memakai MySQL lokal di runtime serverless, jadi gunakan database hosting/cPanel, PlanetScale, TiDB Cloud, Aiven, Railway, atau layanan MySQL lain yang menerima koneksi dari Vercel.
+
+Saat `DB_AUTO_INSTALL=true` atau saat berjalan di Vercel, aplikasi akan otomatis membuat tabel dan data demo dari `database/schema.sql` jika database masih kosong. Untuk database produksi yang sudah berisi data, tabel tidak akan di-drop.
 
 Jika memakai Vercel Marketplace dengan TiDB Cloud atau PlanetScale, aplikasi juga membaca env bawaan provider:
 

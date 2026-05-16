@@ -70,7 +70,7 @@ function database_error_response(Throwable $e): never {
     $steps = [
         'Buat database MySQL eksternal dan import file database/schema.sql.',
         'Tambahkan Environment Variables di Vercel: DATABASE_URL atau DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS.',
-        'Redeploy project setelah Environment Variables tersimpan.',
+        'Redeploy project setelah Environment Variables tersimpan. Aplikasi akan membuat tabel otomatis jika database masih kosong.',
     ];
 
     if ($db_config_missing) {
@@ -132,6 +132,72 @@ function q(string $sql, array $params = []): PDOStatement {
 function one(string $sql, array $params = []): ?array { $r = q($sql, $params)->fetch(); return $r ?: null; }
 function all_rows(string $sql, array $params = []): array { return q($sql, $params)->fetchAll(); }
 function scalar(string $sql, array $params = []) { return q($sql, $params)->fetchColumn(); }
+
+function database_table_exists(string $table): bool {
+    if (!preg_match('/^[A-Za-z0-9_]+$/', $table)) return false;
+    try {
+        $stmt = db()->prepare("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?");
+        $stmt->execute([$table]);
+        return (bool)$stmt->fetchColumn();
+    } catch (Throwable $e) {
+        if (PHP_SAPI === 'cli') throw $e;
+        database_error_response($e);
+    }
+}
+
+function database_split_sql(string $sql): array {
+    $sql = preg_replace('/^\s*--.*$/m', '', $sql);
+    return array_values(array_filter(array_map('trim', explode(';', $sql)), fn($stmt) => $stmt !== ''));
+}
+
+function database_auto_install_enabled(): bool {
+    $setting = getenv('DB_AUTO_INSTALL');
+    if ($setting !== false && $setting !== '') return filter_var($setting, FILTER_VALIDATE_BOOLEAN);
+    return getenv('VERCEL') !== false;
+}
+
+function ensure_database_schema(): void {
+    global $db_config_missing;
+    if ($db_config_missing || !database_auto_install_enabled()) return;
+
+    $schemaPath = __DIR__ . '/../database/schema.sql';
+    if (!is_file($schemaPath)) return;
+
+    try {
+        $requiredTables = ['roles', 'permissions', 'users', 'items', 'stock_balances'];
+        $missing = false;
+        foreach ($requiredTables as $table) {
+            if (!database_table_exists($table)) {
+                $missing = true;
+                break;
+            }
+        }
+        if (!$missing) return;
+
+        foreach (database_split_sql((string)file_get_contents($schemaPath)) as $statement) {
+            if (preg_match('/^DROP\s+TABLE/i', $statement)) continue;
+
+            if (preg_match('/^CREATE\s+TABLE\s+/i', $statement)) {
+                $statement = preg_replace('/^CREATE\s+TABLE\s+/i', 'CREATE TABLE IF NOT EXISTS ', $statement, 1);
+                db()->exec($statement);
+                continue;
+            }
+
+            if (preg_match('/^INSERT\s+INTO\s+/i', $statement)) {
+                $statement = preg_replace('/^INSERT\s+INTO\s+/i', 'INSERT IGNORE INTO ', $statement, 1);
+                db()->exec($statement);
+                continue;
+            }
+
+            if (preg_match('/^SET\s+/i', $statement)) {
+                db()->exec($statement);
+            }
+        }
+    } catch (Throwable $e) {
+        if (PHP_SAPI === 'cli') throw $e;
+        database_error_response($e);
+    }
+}
 
 if (is_file(__DIR__ . '/enterprise.php')) require_once __DIR__ . '/enterprise.php';
 
@@ -203,6 +269,7 @@ function ensure_core_permissions(): void {
     }
 }
 
+ensure_database_schema();
 ensure_core_permissions();
 if (function_exists('ensure_enterprise_schema')) ensure_enterprise_schema();
 
